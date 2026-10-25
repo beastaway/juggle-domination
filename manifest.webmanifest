@@ -1,0 +1,16 @@
+{
+  "name": "Juggle Jumps",
+  "short_name": "Juggle Jumps",
+  "description": "Every juggle jumps your horse over a fence. Road to 100!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3efe4",
+  "theme_color": "#2f6b3a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
