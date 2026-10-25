@@ -1,6 +1,7 @@
 // Juggle Jumps — the horse, the fences and the four worlds, drawn on a canvas.
 
 export const HORSE_COATS = {
+  paint: { body: "#7a4524", shade: "#5a3218", mane: "#2a1a12", socks: true, blaze: true, patches: "#fbf7ef", legs: "#fbf7ef", farLegs: "#d8d0c2" },
   chestnut: { body: "#b8662c", shade: "#8c4a1c", mane: "#4a2814", socks: true, blaze: true },
   bay: { body: "#8a4b26", shade: "#653414", mane: "#1d1410", socks: false, blaze: true },
   black: { body: "#2c2a2b", shade: "#171617", mane: "#0b0b0b", socks: true, blaze: true },
@@ -420,26 +421,11 @@ export class Scene {
     return [front(0), hind(0.9), front(Math.PI), hind(0.9 + Math.PI)];
   }
 
-  _horseBody(c, ph, mode, t = 0) {
-    const C = this.coat;
-    const dy = mode === "down" ? 34 : mode === "getup" ? 34 * (1 - t) : 0;
-    c.translate(0, dy);
-    const L = this._legAngles(mode, ph, t);
-    const J = [[36, -56], [-40, -60], [29, -56], [-33, -60]];
-    // far legs (shaded) behind the body
-    this._leg(c, J[0][0], J[0][1], L[0][0], L[0][1], 24, 27, C.shade, false);
-    this._leg(c, J[1][0], J[1][1], L[1][0], L[1][1], 24, 27, C.shade, false);
-    // tail
-    const wag = Math.sin(this.time * 6) * 4 + (mode === "jump" ? -10 : 0);
-    c.strokeStyle = C.mane; c.lineCap = "round";
-    c.lineWidth = 10; c.beginPath(); c.moveTo(-54, -82); c.quadraticCurveTo(-78, -70 + wag, -76, -40 + wag); c.stroke();
-    c.lineWidth = 6; c.beginPath(); c.moveTo(-56, -80); c.quadraticCurveTo(-86, -64 + wag, -86, -44 + wag); c.stroke();
-    // body + neck + head silhouette
-    c.fillStyle = C.body;
+  _bodyPath(c) {
     c.beginPath();
-    c.moveTo(-50, -56);
-    c.bezierCurveTo(-64, -66, -62, -88, -44, -91);   // rump
-    c.bezierCurveTo(-28, -94, -10, -85, 8, -87);     // back
+    c.moveTo(-46, -56);
+    c.bezierCurveTo(-56, -64, -55, -86, -40, -90);   // rump (trim)
+    c.bezierCurveTo(-26, -93, -10, -85, 8, -87);     // back
     c.bezierCurveTo(18, -89, 26, -96, 34, -106);     // withers into crest
     c.bezierCurveTo(40, -116, 48, -123, 56, -125);   // crest to poll
     c.bezierCurveTo(66, -121, 76, -109, 83, -99);    // face
@@ -447,16 +433,43 @@ export class Scene {
     c.bezierCurveTo(68, -90, 64, -96, 60, -100);     // jaw
     c.bezierCurveTo(56, -95, 52, -86, 49, -75);      // throat
     c.bezierCurveTo(47, -62, 41, -50, 30, -48);      // chest
-    c.bezierCurveTo(10, -44, -20, -44, -38, -50);    // belly
-    c.bezierCurveTo(-44, -52, -48, -54, -50, -56);
-    c.fill();
+    c.bezierCurveTo(10, -44, -18, -44, -34, -49);    // belly
+    c.bezierCurveTo(-40, -51, -44, -53, -46, -56);
+  }
+
+  _horseBody(c, ph, mode, t = 0) {
+    const C = this.coat;
+    const dy = mode === "down" ? 34 : mode === "getup" ? 34 * (1 - t) : 0;
+    c.translate(0, dy);
+    const L = this._legAngles(mode, ph, t);
+    const J = [[36, -56], [-36, -60], [29, -56], [-30, -60]];
+    // far legs (shaded) behind the body
+    this._leg(c, J[0][0], J[0][1], L[0][0], L[0][1], 24, 27, C.farLegs || C.shade, false);
+    this._leg(c, J[1][0], J[1][1], L[1][0], L[1][1], 24, 27, C.farLegs || C.shade, false);
+    // tail
+    const wag = Math.sin(this.time * 6) * 4 + (mode === "jump" ? -10 : 0);
+    c.strokeStyle = C.mane; c.lineCap = "round";
+    c.lineWidth = 9; c.beginPath(); c.moveTo(-48, -82); c.quadraticCurveTo(-70, -70 + wag, -68, -40 + wag); c.stroke();
+    c.lineWidth = 5; c.beginPath(); c.moveTo(-50, -80); c.quadraticCurveTo(-78, -64 + wag, -78, -44 + wag); c.stroke();
+    // body + neck + head
+    c.fillStyle = C.body; this._bodyPath(c); c.fill();
+    if (C.patches) { // paint (tobiano) patches
+      c.save(); this._bodyPath(c); c.clip(); c.fillStyle = C.patches;
+      c.beginPath(); c.ellipse(-6, -52, 30, 12, 0.05, 0, 7); c.fill();          // belly
+      c.beginPath(); c.ellipse(-30, -70, 14, 18, -0.3, 0, 7); c.fill();         // hip
+      c.beginPath(); c.ellipse(14, -66, 10, 13, 0.4, 0, 7); c.fill();           // shoulder
+      c.beginPath(); c.ellipse(40, -84, 7, 12, 0.5, 0, 7); c.fill();            // neck
+      c.beginPath(); c.ellipse(-12, -88, 9, 4, 0, 0, 7); c.fill();              // back splash
+      c.restore();
+    }
     // muzzle shade + nostril
     c.fillStyle = C.shade; c.beginPath(); c.ellipse(78, -94, 7, 6, 0.6, 0, 7); c.fill();
     c.fillStyle = "#1a1210"; c.beginPath(); c.ellipse(80, -96, 1.6, 2.2, 0.6, 0, 7); c.fill();
     if (C.blaze) { c.strokeStyle = "#f7f3ea"; c.lineWidth = 4.5; c.beginPath(); c.moveTo(62, -119); c.quadraticCurveTo(71, -112, 77, -101); c.stroke(); }
-    // saddle pad
+    // saddle pad + saddle
     c.fillStyle = "#22305a"; c.beginPath(); c.moveTo(-18, -88); c.quadraticCurveTo(0, -84, 16, -89); c.lineTo(18, -66); c.quadraticCurveTo(0, -62, -18, -66); c.closePath(); c.fill();
     c.fillStyle = "#f2b632"; c.fillRect(-18, -69, 36, 4);
+    c.fillStyle = "#5a3a22"; c.beginPath(); c.moveTo(-12, -90); c.quadraticCurveTo(0, -84, 13, -91); c.lineTo(11, -84); c.quadraticCurveTo(0, -80, -10, -84); c.closePath(); c.fill();
     // ear
     c.fillStyle = C.shade; c.beginPath(); c.moveTo(53, -123); c.lineTo(56, -138); c.lineTo(62, -122); c.closePath(); c.fill();
     // eye
@@ -471,11 +484,54 @@ export class Scene {
       const u = i / 4, mx = 52 - u * 26, my = -122 + u * 28, flow = Math.sin(this.time * 8 + i) * 2 - (mode === "jump" ? 4 : 0);
       c.lineWidth = 4; c.beginPath(); c.moveTo(mx, my); c.lineTo(mx - 9, my + 5 + flow); c.stroke();
     }
-    // forelock
     c.lineWidth = 4; c.beginPath(); c.moveTo(57, -124); c.lineTo(63, -118); c.stroke();
+    // rider
+    this._rider(c, mode);
     // near legs in front of the body
-    this._leg(c, J[2][0], J[2][1], L[2][0], L[2][1], 24, 27, C.body, C.socks);
-    this._leg(c, J[3][0], J[3][1], L[3][0], L[3][1], 24, 27, C.body, C.socks);
+    this._leg(c, J[2][0], J[2][1], L[2][0], L[2][1], 24, 27, C.legs || C.body, C.socks && !C.legs);
+    this._leg(c, J[3][0], J[3][1], L[3][0], L[3][1], 24, 27, C.legs || C.body, C.socks && !C.legs);
+  }
+
+  _rider(c, mode) {
+    const lean = { jump: 0.6, trip: 0.85, down: 0.25, getup: 0.25, rear: -0.25 }[mode] ?? 0.2;
+    const bob = mode === "run" ? Math.abs(Math.sin(this.gait)) * 1.5 : 0;
+    const hx = -1, hy = -89 - bob;
+    const jersey = "#c8372d", breeches = "#f4f1ea", skin = "#f0c39c", hair = "#7a4a26";
+    // leg: thigh forward-down to the knee, shin back to the stirrup
+    const knee = mode === "jump" ? [15, -80] : [12, -77], foot = mode === "jump" ? [8, -66] : [6, -62];
+    c.lineCap = "round"; c.lineJoin = "round";
+    c.strokeStyle = breeches; c.lineWidth = 8; c.beginPath(); c.moveTo(hx, hy); c.lineTo(knee[0], knee[1]); c.lineTo((knee[0] + foot[0]) / 2, (knee[1] + foot[1]) / 2); c.stroke();
+    c.strokeStyle = "#1d1a1a"; c.lineWidth = 7; c.beginPath(); c.moveTo((knee[0] + foot[0]) / 2, (knee[1] + foot[1]) / 2); c.lineTo(foot[0], foot[1]); c.lineTo(foot[0] + 5, foot[1] + 1); c.stroke();
+    c.strokeStyle = "#9aa3ad"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(2, -84); c.lineTo(foot[0], foot[1] + 3); c.stroke();
+    // upper body, rotated around the hip
+    c.save(); c.translate(hx, hy); c.rotate(lean);
+    c.fillStyle = jersey; c.beginPath(); c.roundRect(-6, -30, 13, 31, 5); c.fill();
+    c.fillStyle = "#fff"; c.font = "800 9px sans-serif"; c.textAlign = "center"; c.fillText("10", 0.5, -12);
+    // ponytail, head, helmet
+    const sw = Math.sin(this.time * 7) * 3 + (mode === "jump" ? 5 : 0);
+    c.strokeStyle = hair; c.lineWidth = 5; c.beginPath(); c.moveTo(-5, -40); c.quadraticCurveTo(-13, -38 + sw * 0.3, -15 - sw * 0.4, -28 + sw * 0.3); c.stroke();
+    c.fillStyle = skin; c.fillRect(-1.5, -35, 5, 6);
+    c.beginPath(); c.arc(1, -41, 7.5, 0, 7); c.fill();
+    c.fillStyle = "#1f2a44"; c.beginPath(); c.arc(1, -43, 8.5, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill();
+    c.fillRect(1, -44.5, 10, 2.5);
+    c.fillStyle = "#1a1210"; c.beginPath(); c.arc(5, -40.5, 1.2, 0, 7); c.fill();
+    const scared = mode === "trip" || mode === "down";
+    c.strokeStyle = "#7a2b20"; c.lineWidth = 1.3; c.beginPath();
+    if (scared) c.arc(5, -36, 1.8, 0, 7); else c.arc(4.5, -37.5, 2.2, 0.2, Math.PI - 0.6);
+    c.stroke();
+    // arm to the reins (or waving when celebrating / falling)
+    c.strokeStyle = jersey; c.lineWidth = 5.5;
+    let hand;
+    if (mode === "rear" || scared) { hand = [10, -52]; c.beginPath(); c.moveTo(2, -27); c.lineTo(8, -40); c.lineTo(hand[0], hand[1]); c.stroke(); }
+    else { hand = [17, -14]; c.beginPath(); c.moveTo(2, -27); c.lineTo(11, -18); c.lineTo(hand[0], hand[1]); c.stroke(); }
+    c.fillStyle = "#1d1a1a"; c.beginPath(); c.arc(hand[0], hand[1], 2.8, 0, 7); c.fill();
+    const m = c.getTransform();
+    c.restore();
+    // reins from the hand to the bit
+    if (!(mode === "rear" || scared)) {
+      const inv = c.getTransform().inverse(), p = new DOMPoint(hand[0], hand[1]).matrixTransform(m).matrixTransform(inv);
+      c.strokeStyle = "#3b2414"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(p.x, p.y); c.quadraticCurveTo((p.x + 74) / 2, (p.y - 92) / 2 + 8, 74, -92); c.stroke();
+    }
   }
 
   _stars(c) {
